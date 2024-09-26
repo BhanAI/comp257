@@ -56,6 +56,7 @@ val_accuracy = accuracy_score(y_val, val_predictions)
 # # Output validation set accuracy
 print(f"Validation Set Accuracy: {val_accuracy}")
 
+## plt the prediction on Val dataset
 n_images = 10  # Number of images to display
 indices = np.random.choice(len(X_val), n_images, replace=False)
 
@@ -69,28 +70,29 @@ for i, idx in enumerate(indices):
 plt.tight_layout()
 plt.show()
 
-# # Find optimal number of clusters using silhouette score
-# silhouette_scores = []
-# cluster_range = range(2, 99)
+# 4.Use K-Means to reduce the dimensionality of the set. 
+# Find optimal number of clusters using silhouette score
+silhouette_scores = []
+cluster_range = range(2, 99)
 
-# for n_clusters in cluster_range:
-#     kmeans = KMeans(n_clusters=n_clusters, random_state=42)
-#     labels = kmeans.fit_predict(X_train)
-#     silhouette_avg = silhouette_score(X_train, labels)
-#     silhouette_scores.append(silhouette_avg)
+for n_clusters in cluster_range:
+    kmeans = KMeans(n_clusters=n_clusters, random_state=42)
+    labels = kmeans.fit_predict(X_train)
+    silhouette_avg = silhouette_score(X_train, labels)
+    silhouette_scores.append(silhouette_avg)
 
-# # Plot silhouette scores
-# plt.figure(figsize=(10, 6))
-# plt.plot(cluster_range, silhouette_scores, marker='o')
-# plt.title('Silhouette Scores for K-Means Clustering')
-# plt.xlabel('Number of Clusters')
-# plt.ylabel('Silhouette Score')
-# plt.xticks(cluster_range)
-# plt.grid()
-# plt.show()
+# Plot silhouette scores
+plt.figure(figsize=(10, 6))
+plt.plot(cluster_range, silhouette_scores, marker='o')
+plt.title('Silhouette Scores for K-Means Clustering')
+plt.xlabel('Number of Clusters')
+plt.ylabel('Silhouette Score')
+plt.xticks(cluster_range)
+plt.grid()
+plt.show()
 
 # Optimal number of clusters
-optimal_n_clusters = 82
+optimal_n_clusters = 97
 print(f"Optimal number of clusters: {optimal_n_clusters}")
 kmeans82 = KMeans(n_clusters=optimal_n_clusters, random_state=42)
 
@@ -163,6 +165,6 @@ plot_dbscan(dbscan, X_scaled, size=100)
 plt.subplot(122)
 plot_dbscan(dbscan2, X_scaled, size=600,show_ylabels=False)
 plt.show()
-unique_clusters = np.unique(clusters2)
+unique_clusters = np.unique(clusters)
 
 len(unique_clusters)
