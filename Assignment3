@@ -1,0 +1,246 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Oct  2 14:02:07 2024
+
+@author: bettyhan
+"""
+
+#1. Retrieve and load the Olivetti faces dataset 
+from sklearn.datasets import fetch_olivetti_faces
+from sklearn.model_selection import train_test_split
+import numpy as np
+from sklearn.metrics import accuracy_score
+from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import cross_val_score,KFold
+import matplotlib.pyplot as plt
+import scipy.cluster.hierarchy as sch
+olivetti_faces = fetch_olivetti_faces()
+olivetti_faces.data.shape
+
+X = olivetti_faces.data  
+y = olivetti_faces.target 
+
+
+#2. Split the training set, a validation set, and a test set using stratified sampling to ensure that there are the same number of images per person in each set. [0 points]
+
+X_train, X_temp, y_train, y_temp = train_test_split(X, y, test_size=0.4, stratify=y, random_state=42)
+X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=0.5, stratify=y_temp, random_state=42)
+X_train.shape
+
+
+
+#3. Using k-fold cross validation, train a classifier to predict which person is represented in each picture, and evaluate it on the validation set.
+model = LogisticRegression(max_iter=1000)
+
+# # K-Fold Cross Validation
+
+k = 5
+kf = KFold(n_splits=k, shuffle=True, random_state=42)
+scores = cross_val_score(model, X_train, y_train, cv=kf,scoring='accuracy')
+print(f"Cross-validation scores: {scores}")
+print(f"Mean CV score: {np.mean(scores)}")
+
+model.fit(X_train, y_train)
+val_predictions = model.predict(X_val)
+val_accuracy = accuracy_score(y_val, val_predictions)
+
+# # Output validation set accuracy
+print(f"Validation Set Accuracy: {val_accuracy}")
+
+## plt the prediction on Val dataset
+n_images = 10  # Number of images to display
+indices = np.random.choice(len(X_val), n_images, replace=False)
+
+plt.figure(figsize=(15, 6))
+for i, idx in enumerate(indices):
+    ax = plt.subplot(2, 5, i + 1)
+    ax.imshow(X_val[idx].reshape(64, 64), cmap='gray')
+    ax.set_title(f'True: {y_val[idx]}\nPred: {val_predictions[idx]}')
+    ax.axis('off')
+
+plt.tight_layout()
+plt.show()
+
+#4. Using either Agglomerative Hierarchical Clustering (AHC) or Divisive Hierarchical Clustering (DHC) and using the centroid-based clustering rule, reduce the dimensionality of the set by using the following similarity measures:
+#a) Euclidean Distance 
+from scipy.cluster.hierarchy import linkage, dendrogram
+import matplotlib.pyplot as plt
+from sklearn.cluster import AgglomerativeClustering
+from sklearn import metrics
+# Perform AHC using Euclidean Distance
+euclidean = AgglomerativeClustering(n_clusters=80, linkage='average', metric='euclidean')
+
+euclidean.fit(X_train)
+data_labels = euclidean.labels_
+
+print("Data Labels:" ,data_labels)
+
+print("Silhouette Score:" ,metrics.silhouette_score(X_train, data_labels))
+
+silhouette_scores = []
+cluster_range = range(2, 99)
+
+for n_clusters in cluster_range:
+
+    euclidean = AgglomerativeClustering(n_clusters=n_clusters, linkage='average', metric='euclidean')
+    euclidean.fit(X_train)
+    data_labels = euclidean.labels_
+    silhouette_avg = silhouette_score(X_train, data_labels )
+    silhouette_scores.append(silhouette_avg)
+
+# Plot silhouette scores
+plt.figure(figsize=(10, 6))
+plt.plot(cluster_range, silhouette_scores, marker='o')
+plt.title('Silhouette Scores for Euclidean')
+plt.xlabel('Number of Clusters')
+plt.ylabel('Silhouette Score')
+plt.xticks(cluster_range)
+plt.grid()
+plt.show()
+
+
+# Plot the dendrogram
+plt.figure(figsize=(20, 7))
+plt.title('Hierarchical Clustering Dendrogram')
+plt.xlabel('Data Labels')
+plt.ylabel('Distance')
+dendro = sch.dendrogram(sch.linkage(X_train,"average", metric="euclidean"),
+                        labels=data_labels,
+                        leaf_rotation=90,
+                        leaf_font_size=8,
+                        show_contracted=True)
+plt.show()
+
+
+#b) Minkowski Distance 
+##### choose Minkowski p=1, set metric = 'manhattan' #########
+minkowski = AgglomerativeClustering(n_clusters=92, linkage='average', metric='manhattan')
+X_mink=minkowski.fit(X_train)
+data_labels2 = minkowski.labels_
+
+print("Data Labels:" ,data_labels2)
+
+print("Silhouette Score:" ,metrics.silhouette_score(X_train, data_labels2))
+
+silhouette_scores_mink = []
+cluster_range = range(2, 99)
+
+for n_clusters in cluster_range:
+
+    minkowski = AgglomerativeClustering(n_clusters=n_clusters, linkage='average', metric='manhattan')
+    minkowski.fit(X_train)
+    data_labels_m = minkowski.labels_
+    silhouette_avg2 = silhouette_score(X_train, data_labels_m)
+    silhouette_scores_mink.append(silhouette_avg2)  
+    
+    
+# Plot silhouette scores
+plt.figure(figsize=(10, 6))
+plt.plot(cluster_range, silhouette_scores_mink, marker='o')
+plt.title('Silhouette Scores for Minkowski')
+plt.xlabel('Number of Clusters')
+plt.ylabel('Silhouette Score')
+plt.xticks(cluster_range)
+plt.grid()
+plt.show()
+
+#c) Cosine Similarity 
+
+m_cosine = AgglomerativeClustering(n_clusters=94, linkage='average', metric='cosine')
+X_cos=m_cosine.fit(X_train)
+data_labels3 = m_cosine.labels_
+
+print("Data Labels:" ,data_labels3)
+
+print("Silhouette Score:" ,metrics.silhouette_score(X_train, data_labels3))
+
+# Plot the dendrogram
+plt.figure(figsize=(20, 7))
+plt.title('Hierarchical Clustering Dendrogram Cosine')
+plt.xlabel('Data Labels')
+plt.ylabel('Distance')
+dendro = sch.dendrogram(sch.linkage(X_train,"average", metric="cosine"),
+                        labels=data_labels3,
+                        leaf_rotation=90,
+                        leaf_font_size=8,
+                        show_contracted=True)
+plt.show()
+
+silhouette_scores = []
+cluster_range = range(2, 99)
+
+for n_clusters in cluster_range:
+
+    m_cosine = AgglomerativeClustering(n_clusters=n_clusters, linkage='average', metric='cosine')
+    m_cosine.fit(X_train)
+    data_labels_c = m_cosine.labels_
+    silhouette_avg = silhouette_score(X_train, data_labels_c )
+    silhouette_scores.append(silhouette_avg)
+
+# Plot silhouette scores
+plt.figure(figsize=(10, 6))
+plt.plot(cluster_range, silhouette_scores, marker='o')
+plt.title('Silhouette Scores for Clustering Cosine')
+plt.xlabel('Number of Clusters')
+plt.ylabel('Silhouette Score')
+plt.xticks(cluster_range)
+plt.grid()
+plt.show()
+
+#5. Discuss any discrepancies observed between 4(a), 4(b), or 4(c).
+#Use the silhouette score approach to choose the number of clusters for 4(a), 4(b), and 4(c). 
+#6. Use the set from (4(a), 4(b), or 4(c)) to train a classifier as in (3) using k-fold cross validation.
+
+model_k = LogisticRegression(max_iter=1000)
+
+# # K-Fold Cross Validation for 4(a)
+model_k.fit(X_train, data_labels)
+
+k = 5
+kf = KFold(n_splits=k, shuffle=True, random_state=42)
+scores1 = cross_val_score(model_k, X_train, data_labels, cv=kf,scoring='accuracy')
+print(f"Cross-validation scores with 4(a) set: {scores1}")
+print(f"Mean CV score 4(a): {np.mean(scores1)}")
+
+
+#K-Fold Cross Validation for 4(b)
+
+model_k2 = LogisticRegression(max_iter=1000)
+
+k = 5
+kf = KFold(n_splits=k, shuffle=True, random_state=42)
+scores2 = cross_val_score(model_k2, X_train, data_labels2, cv=kf,scoring='accuracy')
+print(f"Cross-validation scores with 4(b) set: {scores2}")
+print(f"Mean CV score 4(b): {np.mean(scores2)}")
+
+
+#K-Fold Cross Validation for 4(c)
+
+model_k3 = LogisticRegression(max_iter=1000)
+
+k = 5
+kf = KFold(n_splits=k, shuffle=True, random_state=42)
+scores3 = cross_val_score(model_k3, X_train, data_labels3, cv=kf,scoring='accuracy')
+print(f"Cross-validation scores with 4(c): {scores3}")
+print(f"Mean CV score 4(c): {np.mean(scores3)}")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
